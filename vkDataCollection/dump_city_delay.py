@@ -3,6 +3,7 @@ import os
 import aiohttp
 import logging
 
+import httpx
 import pandas as pd
 
 from dotenv import load_dotenv
@@ -28,7 +29,7 @@ parser.add_argument("--algo",
 
 args = parser.parse_args()
 
-api_version = 5.52
+api_version = 5.199
 
 access_token = os.getenv("access_token")
 
@@ -106,10 +107,11 @@ async def get_users(search_params, session):
     """
     logger.info(f"Starting search with params: {search_params}")
 
-    async with session.get('https://api.vk.com/method/users.search', params=search_params) as response:
+    async with httpx.AsyncClient() as client:
+        response = await client.get('https://api.vk.com/method/users.search', params=search_params)
         logger.debug("users.search response")
-        logger.debug((await response.text()))
-        users = (await response.json())["response"]["items"]
+        logger.debug(response.text)
+        users = (response.json())["response"]["items"]
 
     ids = []
     for user in users:
@@ -123,10 +125,11 @@ async def get_users(search_params, session):
         "v": str(api_version)
     }
 
-    async with session.post('https://api.vk.com/method/users.get', data=get_params) as response:
+    async with httpx.AsyncClient() as client:
+        response = await client.post('https://api.vk.com/method/users.get', params=get_params)
         logger.debug("users.get response")
-        logger.debug(await response.text())
-        users = await response.json()
+        logger.debug(response.text)
+        users = response.json()
         return users
 
 
